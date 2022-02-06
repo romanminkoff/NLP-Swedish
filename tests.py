@@ -13,7 +13,8 @@ def test_cefr_word_present():
 def test_complexity_word_raise_word_not_found():
     w = cefr.nlp('bil').sentences[0].words[0]
     w.lemma = 'boooooooooo'  # corrupt lemma
-    with pytest.raises(cefr.CefrWordNotFoundException):
+    cefr.fail_on_missing_lemma = True
+    with pytest.raises(cefr.CefrLemmaNotFoundException):
         cefr._complexity_word(w)
 
 def test_cefr_complexity_word():
@@ -49,3 +50,9 @@ def test_cefr_complexity_complex_sentence():
 def test_cefr_complexity_text():
     txt = 'En man kör en bil. Många barn kör bil.'
     assert cefr.Complexity.text(txt) == 1
+
+def test_cefr_complexity_sentence_with_unknown_words():
+    cefr.fail_on_missing_lemma = False
+    s = ('Sverige är en konstitutionell monarki'
+         ' med parlamentarisk demokrati och utvecklad ekonomi.')
+    assert cefr.Complexity.sentence(s) == 1.8888888888888888

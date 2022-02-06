@@ -4,6 +4,7 @@ import stanza
 nlp = stanza.Pipeline('sv')
 
 verbose = False
+fail_on_missing_lemma = False
 
 LEX_KELLY = 'kelly.xml'
 
@@ -47,7 +48,7 @@ kelly_to_stanza_pos = {
     'verb': 'VERB'
 }
 
-class CefrWordNotFoundException(Exception):
+class CefrLemmaNotFoundException(Exception):
     pass
 
 def _verbose(s):
@@ -61,7 +62,12 @@ def _match_upos(df, w):
 def _complexity_word(w: stanza.models.common.doc.Word):
     kelly_df = find(w.lemma)
     if kelly_df.index.size == 0:
-        raise CefrWordNotFoundException(f'word: {w.text}, lemma: {w.lemma}')
+        if fail_on_missing_lemma:
+            raise CefrLemmaNotFoundException(f'{w.text}, lemma: {w.lemma}')
+        else:
+            if verbose:
+                _verbose(f'skipping word. Lemma not found for: {w.text}')
+            return
     
     score = _match_upos(kelly_df, w)
     # PoS is missing, so return cefr score of the most frequent case
@@ -78,9 +84,9 @@ def _complexity_sentence(s: stanza.models.common.doc.Sentence):
     for w in s.words:
         if w.upos in skip_PoS:
             continue
-        idx = _complexity_word(w)
-        score += idx
-        words_cnt += 1
+        if idx := _complexity_word(w):
+            score += idx
+            words_cnt += 1
     mean_score = score/words_cnt
     if verbose:
         _verbose(f'Sentence score: {mean_score}')
