@@ -3,6 +3,8 @@ import stanza
 
 nlp = stanza.Pipeline('sv')
 
+verbose = False
+
 LEX_KELLY = 'kelly.xml'
 
 class _Cefr:
@@ -48,17 +50,26 @@ kelly_to_stanza_pos = {
 class CefrWordNotFoundException(Exception):
     pass
 
+def _verbose(s):
+    print(f'[CEFR] {s}')
+
+def _match_upos(df, w):
+    for _, row in df.iterrows():
+        if w.upos == kelly_to_stanza_pos[row.pos]:
+            return row.cefr
+
 def _complexity_word(w: stanza.models.common.doc.Word):
     kelly_df = find(w.lemma)
     if kelly_df.index.size == 0:
-        raise CefrWordNotFoundException(w.lemma)
+        raise CefrWordNotFoundException(f'word: {w.text}, lemma: {w.lemma}')
     
-    for _, row in kelly_df.iterrows():
-        if w.upos == kelly_to_stanza_pos[row.pos]:
-            return row.cefr
-    
+    score = _match_upos(kelly_df, w)
     # PoS is missing, so return cefr score of the most frequent case
-    return kelly_df.iloc[0].cefr
+    score = score or kelly_df.iloc[0].cefr
+
+    if verbose:
+        _verbose(f'{w.text}: {score}')
+    return score
 
 def _complexity_sentence(s: stanza.models.common.doc.Sentence):
     skip_PoS = ['PUNCT', 'NUM', 'PROPN']
@@ -71,6 +82,8 @@ def _complexity_sentence(s: stanza.models.common.doc.Sentence):
         score += idx
         words_cnt += 1
     mean_score = score/words_cnt
+    if verbose:
+        _verbose(f'Sentence score: {mean_score}')
     return mean_score
 
 def _complexity_text(t: stanza.models.common.doc.Document):
@@ -81,6 +94,8 @@ def _complexity_text(t: stanza.models.common.doc.Document):
         score += idx
         sent_cnt += 1
     mean_score = score/sent_cnt
+    if verbose:
+        _verbose(f'Text score: {mean_score}')
     return mean_score
 
 
