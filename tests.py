@@ -55,4 +55,4 @@ def test_cefr_complexity_sentence_with_unknown_words():
     cefr.fail_on_missing_lemma = False
     s = ('Sverige är en konstitutionell monarki'
          ' med parlamentarisk demokrati och utvecklad ekonomi.')
-    assert cefr.Complexity.sentence(s) == 1.8888888888888888
+    assert cefr.Complexity.sentence(s) == 1.9

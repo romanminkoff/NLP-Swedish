@@ -5,6 +5,7 @@ nlp = stanza.Pipeline('sv')
 
 verbose = False
 fail_on_missing_lemma = False
+round_ndigits = 1
 
 LEX_KELLY = 'kelly.xml'
 
@@ -51,6 +52,9 @@ kelly_to_stanza_pos = {
 class CefrLemmaNotFoundException(Exception):
     pass
 
+def _round(n):
+    return round(n, round_ndigits)
+
 def _verbose(s):
     print(f'[CEFR] {s}')
 
@@ -75,7 +79,7 @@ def _complexity_word(w: stanza.models.common.doc.Word):
 
     if verbose:
         _verbose(f'{w.text}: {score}')
-    return score
+    return _round(score)
 
 def _complexity_sentence(s: stanza.models.common.doc.Sentence):
     skip_PoS = ['PUNCT', 'NUM', 'PROPN']
@@ -90,7 +94,7 @@ def _complexity_sentence(s: stanza.models.common.doc.Sentence):
     mean_score = score/words_cnt
     if verbose:
         _verbose(f'Sentence score: {mean_score}')
-    return mean_score
+    return _round(mean_score)
 
 def _complexity_text(t: stanza.models.common.doc.Document):
     sent_cnt = 0
@@ -102,7 +106,7 @@ def _complexity_text(t: stanza.models.common.doc.Document):
     mean_score = score/sent_cnt
     if verbose:
         _verbose(f'Text score: {mean_score}')
-    return mean_score
+    return _round(mean_score)
 
 
 class Complexity:
