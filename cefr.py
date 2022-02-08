@@ -73,9 +73,9 @@ def _complexity_word(w: stanza.models.common.doc.Word):
                 _verbose(f'skipping word. Lemma not found for: {w.text}')
             return
     
-    score = _match_upos(kelly_df, w)
-    # PoS is missing, so return cefr score of the most frequent case
-    score = score or kelly_df.iloc[0].cefr
+    if not (score := _match_upos(kelly_df, w)):
+        # PoS is missing, so return cefr score of the most frequent case
+        score = kelly_df.iloc[0].cefr
 
     if verbose:
         _verbose(f'{w.text}: {score}')
@@ -91,22 +91,24 @@ def _complexity_sentence(s: stanza.models.common.doc.Sentence):
         if idx := _complexity_word(w):
             score += idx
             words_cnt += 1
-    mean_score = score/words_cnt
-    if verbose:
-        _verbose(f'Sentence score: {mean_score}')
-    return _round(mean_score)
+    if words_cnt:
+        mean_score = _round(score/words_cnt)
+        if verbose:
+            _verbose(f'Sentence score: {mean_score}')
+        return mean_score
 
 def _complexity_text(t: stanza.models.common.doc.Document):
     sent_cnt = 0
     score = 0
     for s in t.sentences:
-        idx = _complexity_sentence(s)
-        score += idx
-        sent_cnt += 1
-    mean_score = score/sent_cnt
-    if verbose:
-        _verbose(f'Text score: {mean_score}')
-    return _round(mean_score)
+        if idx := _complexity_sentence(s):
+            score += idx
+            sent_cnt += 1
+    if sent_cnt:
+        mean_score = _round(score/sent_cnt)
+        if verbose:
+            _verbose(f'Text score: {mean_score}')
+        return mean_score
 
 
 class Complexity:

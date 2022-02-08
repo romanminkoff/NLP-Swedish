@@ -56,3 +56,11 @@ def test_cefr_complexity_sentence_with_unknown_words():
     s = ('Sverige är en konstitutionell monarki'
          ' med parlamentarisk demokrati och utvecklad ekonomi.')
     assert cefr.Complexity.sentence(s) == 1.9
+
+def test_cefr_complexity_sentence_with_only_unknown_words():
+    s = 'AAA bbb cccc.'
+    assert cefr.Complexity.sentence(s) == None
+
+def test_cefr_complexity_text_with_only_unknown_words():
+    t = 'Aaa bbb ccc. Ddd eee. Fff ggg.'
+    assert cefr.Complexity.text(t) == None
