@@ -56,30 +56,31 @@ def _round(n):
     return round(n, round_ndigits)
 
 def _verbose(s):
-    print(f'[CEFR] {s}')
+    if verbose:
+        print(f'[CEFR] {s}')
 
 def _match_upos(df, w):
     for _, row in df.iterrows():
         if w.upos == kelly_to_stanza_pos[row.pos]:
             return row.cefr
 
-def _complexity_word(w: stanza.models.common.doc.Word):
-    kelly_df = find(w.lemma)
-    if kelly_df.index.size == 0:
-        if fail_on_missing_lemma:
-            raise CefrLemmaNotFoundException(f'{w.text}, lemma: {w.lemma}')
-        else:
-            if verbose:
-                _verbose(f'skipping word. Lemma not found for: {w.text}')
-            return
-    
-    if not (score := _match_upos(kelly_df, w)):
-        # PoS is missing, so return cefr score of the most frequent case
-        score = kelly_df.iloc[0].cefr
+def _cefr_score(w: stanza.models.common.doc.Word):
+    lemmas_df = find(w.lemma)
+    if len(lemmas_df.index):
+        if not (score := _match_upos(lemmas_df, w)):
+            # PoS is missing, so return cefr score of the most frequent case
+            score = lemmas_df.iloc[0].cefr
+        return score
 
-    if verbose:
+def _complexity_word(w: stanza.models.common.doc.Word):
+    if score := _cefr_score(w):
         _verbose(f'{w.text}: {score}')
-    return _round(score)
+        return score
+
+    if fail_on_missing_lemma:
+        raise CefrLemmaNotFoundException(f'{w.text}, lemma: {w.lemma}')
+    else:
+        _verbose(f'skipping word. Lemma not found for: {w.text}')
 
 def _complexity_sentence(s: stanza.models.common.doc.Sentence):
     skip_PoS = ['PUNCT', 'NUM', 'PROPN']
@@ -93,8 +94,7 @@ def _complexity_sentence(s: stanza.models.common.doc.Sentence):
             words_cnt += 1
     if words_cnt:
         mean_score = _round(score/words_cnt)
-        if verbose:
-            _verbose(f'Sentence score: {mean_score}')
+        _verbose(f'Sentence score: {mean_score}')
         return mean_score
 
 def _complexity_text(t: stanza.models.common.doc.Document):
@@ -106,8 +106,7 @@ def _complexity_text(t: stanza.models.common.doc.Document):
             sent_cnt += 1
     if sent_cnt:
         mean_score = _round(score/sent_cnt)
-        if verbose:
-            _verbose(f'Text score: {mean_score}')
+        _verbose(f'Text score: {mean_score}')
         return mean_score
 
 
